@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:terptales/PDFViewerPage.dart';
 
 void main() {
@@ -30,20 +29,20 @@ class BookListPage extends StatelessWidget {
     // Add corresponding URLs for each book
   ];
 
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('TerpTales')),
-      body: ListView.builder(
+    return Material(
+      child: ListView.builder(
         itemCount: bookTitles.length,
         itemBuilder: (context, index) {
           return ListTile(
             title: Text(bookTitles[index]),
+            trailing: const Icon(Icons.arrow_forward),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PDFViewerPage(pdfUrl: bookUrls[index]),
+                  builder: (context) => const PDFViewerPage(),
+                  settings: RouteSettings(arguments: bookUrls[index]),
                 ),
               );
             },
@@ -57,46 +56,27 @@ class BookListPage extends StatelessWidget {
 
 
 
-// import 'package:flutter/material.dart';
-
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-//   @override
-//   Widget build(BuildContext context){
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       home: const HomePage(),
-//       theme: ThemeData(
-//         colorScheme: ColorScheme.fromSeed(seedColor: Colors.red)
-//       ),
-//     );
-//   }
-// }
-
-// /* 
-// followed a guide from youtube:) https://www.youtube.com/watch?v=XSheN4Lkhpc
-// there is also useful documentation here: https://docs.flutter.dev/cookbook/design/tabs
-// */
-// class HomePage extends StatelessWidget {
-//   const HomePage({super.key});
 //   @override
 //   Widget build(BuildContext context) {
-//     // should probably use some tuples here if that's possible in Dart
-//     final terpIcons = [Icons.sledding, Icons.snowshoeing,]; 
-//     final items = ['Using the Bash Command Line', 'A general Systems Handbook', 'Linux Networking Basics',]; 
-//     return ListView.builder(
-//       itemCount: terpIcons.length,
-//       itemBuilder:(context, index){
-//         return ListTile(
-//           title: Text(items[index]),
-//           leading: (Icon(terpIcons[index])),
-//         );
-//       },
+//     return Scaffold(
+//       appBar: AppBar(title: const Text('TerpTales')),
+//       body: ListView.builder(
+//         itemCount: bookTitles.length,
+//         itemBuilder: (context, index) {
+//           return ListTile(
+//             title: Text(bookTitles[index]),
+//             onTap: () {
+//               Navigator.push(
+//                 context,
+//                 MaterialPageRoute(
+//                   builder: (context) => PDFViewerPage(),
+//                   settings: RouteSettings(arguments: bookUrls[index]))
+//                 ),
+//               );
+//             },
+//           );
+//         },
+//       ),
 //     );
-
 //   }
 // }
