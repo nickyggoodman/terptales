@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-import 'package:path/path.dart' as path;
 
-import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as path;
+//import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:pdf_image_renderer/pdf_image_renderer.dart';
+import 'package:pdf_render/pdf_render.dart';
+
 
 void main() => runApp(MyApp());
 
@@ -20,12 +23,44 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   
   List<String> bookUrls = [];
+  List<Uint8List> thumbnails = [];
+  
 
   @override
   void initState() {
     super.initState();
     loadPdfAssets();
   }
+
+  // // do what espresso3389 spells.
+  // Future<Uint8List?> generatePdfThumbnail(String pdfAssetPath) async {
+  //   try {
+  //     // Open the PDF document from the asset
+  //     final PdfDocument doc = await PdfDocument.openAsset(pdfAssetPath);
+
+  //     // Get the number of pages in the PDF file
+  //     final int pageCount = doc.pageCount;
+
+  //     // The first page is 1
+  //     final PdfPage page = await doc.getPage(1);
+
+  //     // Render the page as an image
+  //     final PdfPageImage pageImage = await page.render();
+
+  //     // Generate dart:ui.Image cache for later use by imageIfAvailable
+  //     await pageImage.createImageIfNotAvailable();
+
+  //     // PDFDocument must be disposed as soon as possible
+  //     doc.dispose();
+
+  //     // Return the raw RGBA data of the rendered page image
+  //     return pageImage.pixels;
+  //   } catch (e) {
+  //     print('Error generating PDF thumbnail: $e');
+  //     return null;
+  //   }
+  // }
+
 
   Future<void> loadPdfAssets() async {
     try {
@@ -175,38 +210,6 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
 
 }
 
-// class HomePage extends StatelessWidget {
-//   const HomePage({Key? key}) : super(key: key);
-//   @override
-//   Widget build(BuildContext context) {
-//     final bookUrls = [
-//       'assets/cmdline.pdf',
-//       'assets/cmsc389z.pdf',
-//       'assets/tools.pdf',
-//     ];
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text("Terptales"),
-//       ),
-//       body: ListView.builder(
-//         itemCount: bookUrls.length,
-//         itemBuilder: (context, index) {
-//           return ListTile(
-//             title: Text(bookUrls[index]), // Display the actual book title
-//             leading: const Icon(Icons.book),
-//             onTap: () {
-//               Navigator.push(
-//                 context,
-//                 MaterialPageRoute(
-//                   builder: (context) => PdfViewer(path: bookUrls[index]),
-//                 ),
-//               );
-//             },
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
 
 
+ 
