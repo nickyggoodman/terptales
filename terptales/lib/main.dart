@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
+import 'package:path/path.dart' as path;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,49 +19,45 @@ class MyApp extends StatefulWidget {
 // going off of the example from https://pub.dev/packages/flutter_pdfview/example
 class _MyAppState extends State<MyApp> {
   
-  String cmdlinepath = "";
-  String cmsc389zpath = "";
-  String toolspath = "";
+  List<String> bookUrls = [];
 
-  // the way I understand this, is that the pdf needs to be loaded to the device's OS.
   @override
-  void initState(){
-    super.initState(); //gotta be honest, i don't know what this does yet.
-    fromAsset('assets/cmdline.pdf', 'cmdline.pdf').then((f) {
-      setState(() {
-        cmdlinepath = f.path;
-      });
-    });
-    fromAsset('assets/cmsc389z.pdf', 'cmsc389z.pdf').then((f) {
-      setState(() {
-        cmsc389zpath = f.path;
-      });
-    });
-    fromAsset('assets/tools.pdf', 'tools.pdf').then((f) {
-      setState(() {
-        toolspath = f.path;
-      });
-    });
-    // we can try directly from a url later...
+  void initState() {
+    super.initState();
+    loadPdfAssets();
   }
-  
-  // retrieves the jaunt from the asset
-  // https://docs.flutter.dev/cookbook/persistence/reading-writing-files path_provider
-  Future<File> fromAsset(String asset, String filename) async {
-    // To open from assets, you can copy them to the app storage folder, and the access them "locally"
-    Completer<File> completer = Completer();
 
+  Future<void> loadPdfAssets() async {
     try {
-      var dir = await getApplicationDocumentsDirectory();
-      File file = File("${dir.path}/$filename");
-      var data = await rootBundle.load(asset);
-      var bytes = data.buffer.asUint8List();
-      await file.writeAsBytes(bytes, flush: true);
-      completer.complete(file);
+      // Get list of all assets
+      final assetBundle = DefaultAssetBundle.of(context);
+      final assetList = await assetBundle.load('AssetManifest.json');
+      final manifestMap = json.decode(utf8.decode(assetList.buffer.asUint8List()));
+      final assets = manifestMap.keys.where((String key) => key.contains('.pdf'));
+
+      // Iterate through each PDF asset and add its path to bookUrls
+      for (var asset in assets) {
+        final pdfFile = await fromAsset(asset);
+        setState(() {
+          bookUrls.add(pdfFile.path);
+        });
+      }
     } catch (e) {
-      throw Exception('Error parsing asset file!');
+      print('Error loading PDF assets: $e');
     }
-    return completer.future;
+  }
+
+  Future<File> fromAsset(String asset) async {
+    try {
+      final data = await rootBundle.load(asset);
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/${path.basename(asset)}'); // Use path.basename
+      final bytes = data.buffer.asUint8List();
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } catch (e) {
+      throw Exception('Error parsing asset file: $e');
+    }
   }
 
   @override
@@ -70,17 +68,18 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         appBar: AppBar(title: const Text ('Terptales')),
         body: ListView.builder(
-        itemCount: 3, //THIS IS HARD CODED - FIX LATER
+        itemCount: bookUrls.length, //THIS IS HARD CODED - FIX LATER
         itemBuilder: (context, index) {
+          print(bookUrls[index]);
           return ListTile(
-            title: Text("[book title]"), // THIS IS HARD CODED - FIX LATER
+            title: Text(path.basename(bookUrls[index])), // THIS IS HARD CODED - FIX LATER
             leading: const Icon(Icons.book),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   // FIX - LOOP THROUGH EVERY PATH, NOT JUST cmdlinepath.
-                  builder: (context) => PDFScreen(path: cmdlinepath),
+                  builder: (context) => PDFScreen(path: bookUrls[index]),
                 ),
               );
             },
@@ -114,7 +113,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(
-        title: Text("[book name]"),
+        title: Text(path.basename(widget.path ?? 'No File Selected')),
       ),
       body: Stack(
         children: <Widget>[
