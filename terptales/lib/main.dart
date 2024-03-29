@@ -17,11 +17,20 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
+// ADDED BY SHAY. A class to represent bookmark
+  class Bookmark {
+    final String pdfPath;
+    final int pageNum;
+
+    Bookmark({required this.pdfPath, required this.pageNum});
+  }
+
 // going off of the example from https://pub.dev/packages/flutter_pdfview/example
 class _MyAppState extends State<MyApp> {
   
   List<String> bookUrls = [];
   List<Uint8List> thumbnails = [];
+  List<Bookmark> bookmarks = []; // ADDED BY SHAY
   
 
   @override
@@ -93,6 +102,24 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  // ADDED BY SHAY
+
+  void addBookmark(String path, int num){
+    setState(() {
+      bookmarks.add(Bookmark(pdfPath: path, pageNum: num));
+    });
+  }
+
+  void removeBookmark(String path, int num){
+    setState(() {
+      bookmarks.removeWhere((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
+    });
+  }
+
+  bool isBookmarked(String path, int num){
+    return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -113,7 +140,9 @@ class _MyAppState extends State<MyApp> {
                 context,
                 MaterialPageRoute(
                   // FIX - LOOP THROUGH EVERY PATH, NOT JUST cmdlinepath.
-                  builder: (context) => PDFScreen(path: bookUrls[index]),
+                  //builder: (context) => PDFScreen(path: bookUrls[index]),
+                  // ADDED BY SHAY
+                  builder: (context) => PDFScreen(path: bookUrls[index], addBookmark: addBookmark, pdfBookmarks: bookmarks, removeBookmark: removeBookmark, isBookmarked: isBookmarked,),
                 ),
               );
             },
@@ -128,8 +157,14 @@ class _MyAppState extends State<MyApp> {
 // again, pull this code from https://pub.dev/packages/flutter_pdfview/example
 class PDFScreen extends StatefulWidget {
   final String? path;
+  final Function(String, int) addBookmark; // ADDED BY SHAY
+  List<Bookmark>pdfBookmarks = [];
+  // UPDATED FOR SECOND PART BY SHAY
+  final Function(String, int) removeBookmark;
+  final Function(String, int) isBookmarked;
 
-  PDFScreen({Key? key, this.path}) : super(key: key);
+  //PDFScreen({Key? key, this.path}) : super(key: key);
+  PDFScreen({Key? key, this.path, required this.addBookmark, required this.pdfBookmarks, required this.removeBookmark, required this.isBookmarked}) : super(key: key);  // ADDED BY SHAY
 
   _PDFScreenState createState() => _PDFScreenState();
 }
@@ -142,11 +177,58 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
   bool isReady = false;
   String errorMessage = '';
 
+  // ADDED BY SHAY
+  @override
+  void initState(){
+    super.initState();
+    // Check if there is a bookmark for the current pdf path
+    final bookmark = widget.pdfBookmarks.lastWhere(
+      (bookmark) => bookmark.pdfPath == widget.path,
+      orElse: () => Bookmark(pdfPath: '', pageNum: 0), // ADDED BY SHAY
+    );
+    
+    // If there is a bookmark go to it
+    if (bookmark.pdfPath != '') {
+      setState(() {
+        currentPage = bookmark.pageNum;
+      });
+    }
+
+  }
+
   @override
   Widget build(BuildContext context){
+    // Define the bookmark icon based on the bookmark status ADDED BY SHAY
+    late IconData bookmarkIcon;
+    if (widget.isBookmarked(widget.path!, currentPage!)) {
+      bookmarkIcon = Icons.bookmark;
+    } else {
+      bookmarkIcon = Icons.bookmark_border;
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(path.basename(widget.path ?? 'No File Selected')),
+        // ADDED BY SHAY
+        actions: [IconButton(onPressed: () {
+          // Remove the bookmark if it is already in the map
+          if(widget.isBookmarked(widget.path!, currentPage!)){
+            widget.removeBookmark(widget.path!, currentPage!);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Removed')),);
+          }
+          else{
+            // Add the bookmark
+            widget.addBookmark(widget.path!, currentPage!);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
+          }
+          setState(() {
+            // Rebuild the widget
+          });
+          //widget.addBookmark(widget.path!, currentPage!);
+        //ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
+        },
+        // Change the bookmarked icon
+        //Icons.bookmark
+        icon: Icon(bookmarkIcon),),],
       ),
       body: Stack(
         children: <Widget>[
