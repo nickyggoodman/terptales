@@ -45,6 +45,8 @@ dependencies:
   pdfx: ^2.6.0
   pdf_thumbnail: ^0.1.6+1
   google_fonts: ^6.2.1
+  flutter_settings_screens: ^0.3.3-null-safety+2
+
 
 
 dev_dependencies:
