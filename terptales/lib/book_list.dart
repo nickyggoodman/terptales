@@ -277,7 +277,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
           ),
           errorMessage.isEmpty
             ? !isReady
-              ? Center(
+              ? const Center(
                   child: CircularProgressIndicator(),
               )
               : Container()

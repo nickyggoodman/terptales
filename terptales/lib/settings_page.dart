@@ -11,6 +11,9 @@ import 'icon_widget.dart';
 import 'faq_page.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 
+
+
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   static const keyDarkMode = 'key-dark-mode';
@@ -26,12 +29,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) => Scaffold(
         body: SafeArea(
           child: ListView(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             children: [
               SettingsGroup(
                 title: 'Settings',
                 children: <Widget>[
-                  FAQPage(),
+                  const FAQPage(),
                   buildTheme(),
                 ],
               ),
@@ -42,7 +45,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget buildTheme() => SwitchSettingsTile(
         settingKey: keyDarkMode,
-        leading: IconWidget(
+        leading: const IconWidget(
           icon: Icons.dark_mode,
           color: Color(0xFF642ef3),
         ),
