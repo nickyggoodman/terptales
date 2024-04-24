@@ -3,12 +3,11 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:path/path.dart' as path;
-//import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'package:terptales/settings_page.dart';
+import 'package:flutter/foundation.dart';
 
 class BookList extends StatefulWidget {
   const BookList({super.key});
@@ -31,7 +30,6 @@ class _BookListState extends State<BookList> {
   List<String> bookUrls = [];
   List<Uint8List> thumbnails = [];
   List<Bookmark> bookmarks = []; // ADDED BY SHAY
-  
 
   @override
   void initState() {
@@ -68,7 +66,35 @@ class _BookListState extends State<BookList> {
   //   }
   // }
 
+  // NEW
+  Future<File> createFileOfPdfUrl() async {
+    Completer<File> completer = Completer();
+    print("Start download file from internet!");
+    try {
+      // "https://berlin2017.droidcon.cod.newthinking.net/sites/global.droidcon.cod.newthinking.net/files/media/documents/Flutter%20-%2060FPS%20UI%20of%20the%20future%20%20-%20DroidconDE%2017.pdf";
+      // final url = "https://pdfkit.org/docs/guide.pdf";
+      final url = "http://www.pdf995.com/samples/pdf.pdf";
+      final filename = url.substring(url.lastIndexOf("/") + 1);
+      var request = await HttpClient().getUrl(Uri.parse(url));
+      var response = await request.close();
+      var bytes = await consolidateHttpClientResponseBytes(response);
+      var dir = await getApplicationDocumentsDirectory();
+      print("Download files");
+      print("${dir.path}/$filename");
+      File file = File("${dir.path}/$filename");
 
+      await file.writeAsBytes(bytes, flush: true);
+      completer.complete(file);
+    } catch (e) {
+      throw Exception('Error parsing asset file!');
+    }
+
+    return completer.future;
+  }
+
+
+  // adds the current location of the pdf file from assets in the device
+  // adds them all to bookUrls
   Future<void> loadPdfAssets() async {
     try {
       // Get list of all assets
@@ -77,6 +103,8 @@ class _BookListState extends State<BookList> {
       final manifestMap = json.decode(utf8.decode(assetList.buffer.asUint8List()));
       final assets = manifestMap.keys.where((String key) => key.contains('.pdf'));
 
+      
+
       // Iterate through each PDF asset and add its path to bookUrls
       for (var asset in assets) {
         final pdfFile = await fromAsset(asset);
@@ -84,6 +112,11 @@ class _BookListState extends State<BookList> {
           bookUrls.add(pdfFile.path);
         });
       }
+      final pdfFile2 = await createFileOfPdfUrl();
+      setState(() {
+        bookUrls.add(pdfFile2.path);
+      });
+
     } catch (e) {
       print('Error loading PDF assets: $e');
     }
@@ -103,19 +136,18 @@ class _BookListState extends State<BookList> {
   }
 
   // ADDED BY SHAY
-
   void addBookmark(String path, int num){
     setState(() {
       bookmarks.add(Bookmark(pdfPath: path, pageNum: num));
     });
   }
-
+  // ADDED BY SHAY
   void removeBookmark(String path, int num){
     setState(() {
       bookmarks.removeWhere((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
     });
   }
-
+  // ADDED BY SHAY
   bool isBookmarked(String path, int num){
     return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
   }
