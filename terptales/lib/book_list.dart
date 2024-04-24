@@ -30,6 +30,12 @@ class _BookListState extends State<BookList> {
   List<String> bookUrls = [];
   List<Uint8List> thumbnails = [];
   List<Bookmark> bookmarks = []; // ADDED BY SHAY
+  // using library of congress collection: https://www.loc.gov/collections/open-access-books/about-this-collection/rights-and-access/
+  List<String> pdfUrls = [
+    "https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/71/64/80/2020716480/2020716480.pdf",
+    "https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/71/97/07/2020719707/2020719707.pdf",
+    "https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/71/99/65/2020719965/2020719965.pdf",
+  ];
 
   @override
   void initState() {
@@ -67,13 +73,13 @@ class _BookListState extends State<BookList> {
   // }
 
   // NEW
-  Future<File> createFileOfPdfUrl() async {
+  Future<File> createFileOfPdfUrl(String pdfurl) async {
     Completer<File> completer = Completer();
     print("Start download file from internet!");
     try {
       // "https://berlin2017.droidcon.cod.newthinking.net/sites/global.droidcon.cod.newthinking.net/files/media/documents/Flutter%20-%2060FPS%20UI%20of%20the%20future%20%20-%20DroidconDE%2017.pdf";
       // final url = "https://pdfkit.org/docs/guide.pdf";
-      final url = "http://www.pdf995.com/samples/pdf.pdf";
+      final url = pdfurl;
       final filename = url.substring(url.lastIndexOf("/") + 1);
       var request = await HttpClient().getUrl(Uri.parse(url));
       var response = await request.close();
@@ -112,10 +118,13 @@ class _BookListState extends State<BookList> {
           bookUrls.add(pdfFile.path);
         });
       }
-      final pdfFile2 = await createFileOfPdfUrl();
-      setState(() {
-        bookUrls.add(pdfFile2.path);
-      });
+      for (var url in pdfUrls) {
+        final pdfFile2 = await createFileOfPdfUrl(url);
+        setState(() {
+            bookUrls.add(pdfFile2.path);
+        });
+      }
+      
 
     } catch (e) {
       print('Error loading PDF assets: $e');
