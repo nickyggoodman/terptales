@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:pdf_render/pdf_render.dart';
 import 'package:flutter/foundation.dart';
+import 'package:pdf_render/pdf_render_widgets.dart';
 
 class BookList extends StatefulWidget {
   const BookList({super.key});
@@ -43,34 +45,36 @@ class _BookListState extends State<BookList> {
     loadPdfAssets();
   }
 
-  // // do what espresso3389 spells.
-  // Future<Uint8List?> generatePdfThumbnail(String pdfAssetPath) async {
-  //   try {
-  //     // Open the PDF document from the asset
-  //     final PdfDocument doc = await PdfDocument.openAsset(pdfAssetPath);
+  
+  // do what espresso3389 spells.
+  // SEE: https://pub.dev/packages/pdf_render "PDF rendering APIs"
+  Future<Uint8List?> generatePdfThumbnail(String pdfAssetPath) async {
+    try {
+      // Open the PDF document from the asset
+      final PdfDocument doc = await PdfDocument.openAsset('assets/cmdline.pdf');
 
-  //     // Get the number of pages in the PDF file
-  //     final int pageCount = doc.pageCount;
+      // The first page is 1
+      final PdfPage page = await doc.getPage(1);
 
-  //     // The first page is 1
-  //     final PdfPage page = await doc.getPage(1);
+      // Render the page as an image
+      final PdfPageImage pageImage = await page.render();
 
-  //     // Render the page as an image
-  //     final PdfPageImage pageImage = await page.render();
+      // Generate dart:ui.Image cache for later use by imageIfAvailable
+      await pageImage.createImageIfNotAvailable();
 
-  //     // Generate dart:ui.Image cache for later use by imageIfAvailable
-  //     await pageImage.createImageIfNotAvailable();
+      // PDFDocument must be disposed as soon as possible
+      doc.dispose();
 
-  //     // PDFDocument must be disposed as soon as possible
-  //     doc.dispose();
+      // Return the raw RGBA data of the rendered page image
+      // https://pub.dev/documentation/pdf_render/latest/pdf_render/PdfPageImage-class.html
+      // use raw image? https://api.flutter.dev/flutter/widgets/RawImage-class.html
+      return pageImage.pixels;
 
-  //     // Return the raw RGBA data of the rendered page image
-  //     return pageImage.pixels;
-  //   } catch (e) {
-  //     print('Error generating PDF thumbnail: $e');
-  //     return null;
-  //   }
-  // }
+    } catch (e) {
+      print('Error generating PDF thumbnail: $e');
+      return null;
+    }
+  }
 
   // NEW
   Future<File> createFileOfPdfUrl(String pdfurl) async {
@@ -167,7 +171,7 @@ class _BookListState extends State<BookList> {
       title: 'Terptales',
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBar(title: const Text ('Terptales')),
+        appBar: AppBar(title: const Text ('Book List')),
         body: ListView.builder(
         itemCount: bookUrls.length, //THIS IS HARD CODED - FIX LATER
         itemBuilder: (context, index) {
@@ -175,7 +179,6 @@ class _BookListState extends State<BookList> {
           return ListTile(
             title: Text(path.basename(bookUrls[index])), // THIS IS HARD CODED - FIX LATER
             leading: const Icon(Icons.book),
-
             onTap: () {
               Navigator.push(
                 context,

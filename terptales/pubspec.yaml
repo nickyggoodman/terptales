@@ -48,6 +48,7 @@ dependencies:
   flutter_settings_screens: ^0.3.3-null-safety+2
   shared_preferences: ^2.2.2
   foundation: ^0.0.5
+  pdf_render: ^1.4.6
 
 
 
