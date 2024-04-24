@@ -18,7 +18,7 @@ class BookList extends StatefulWidget {
   State<BookList> createState() => _BookListState();
 }
 
-// ADDED BY SHAY. A class to represent bookmark
+
 class Bookmark {
   final String pdfPath;
   final int pageNum;
