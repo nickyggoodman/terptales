@@ -10,6 +10,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:pdf_render/pdf_render.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pdf_render/pdf_render_widgets.dart';
+import 'package:pdf_thumbnail/pdf_thumbnail.dart';
 
 class BookList extends StatefulWidget {
   const BookList({super.key});
@@ -43,11 +44,12 @@ class _BookListState extends State<BookList> {
   void initState() {
     super.initState();
     loadPdfAssets();
+    final pdfImageUint8List = generatePdfThumbnail('asset/cmdline.pdf');
   }
 
   
   // do what espresso3389 spells.
-  // SEE: https://pub.dev/packages/pdf_render "PDF rendering APIs"
+  // SEE: https://pub.dev/documentation/pdf_render/latest/ "PDF rendering APIs"
   Future<Uint8List?> generatePdfThumbnail(String pdfAssetPath) async {
     try {
       // Open the PDF document from the asset
@@ -74,6 +76,15 @@ class _BookListState extends State<BookList> {
       print('Error generating PDF thumbnail: $e');
       return null;
     }
+  
+  }
+
+  Future<Uint8List> getThumbnail(String pdfAssetPath) async {
+    Uint8List? result = await generatePdfThumbnail(pdfAssetPath);
+    if (result == null){
+      throw Exception('Failed to generate PDF thumbnail');
+    }
+    return result;
   }
 
   // NEW
@@ -135,19 +146,6 @@ class _BookListState extends State<BookList> {
     }
   }
 
-  Future<File> fromAsset(String asset) async {
-    try {
-      final data = await rootBundle.load(asset);
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/${path.basename(asset)}'); // Use path.basename
-      final bytes = data.buffer.asUint8List();
-      await file.writeAsBytes(bytes, flush: true);
-      return file;
-    } catch (e) {
-      throw Exception('Error parsing asset file: $e');
-    }
-  }
-
   // ADDED BY SHAY
   void addBookmark(String path, int num){
     setState(() {
@@ -165,8 +163,11 @@ class _BookListState extends State<BookList> {
     return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
   }
 
+  
+
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: 'Terptales',
       debugShowCheckedModeBanner: false,
@@ -178,7 +179,9 @@ class _BookListState extends State<BookList> {
           print(bookUrls[index]);
           return ListTile(
             title: Text(path.basename(bookUrls[index])), // THIS IS HARD CODED - FIX LATER
-            leading: const Icon(Icons.book),
+            //instead of icon, use future builder https://api.flutter.dev/flutter/widgets/FutureBuilder-class.html
+            leading: Icon(Icons.book_outlined),
+            
             onTap: () {
               Navigator.push(
                 context,
