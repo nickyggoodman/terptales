@@ -146,6 +146,21 @@ class _BookListState extends State<BookList> {
     }
   }
 
+
+  Future<File> fromAsset(String asset) async {
+    try {
+      final data = await rootBundle.load(asset);
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/${path.basename(asset)}'); // Use path.basename
+      final bytes = data.buffer.asUint8List();
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } catch (e) {
+      throw Exception('Error parsing asset file: $e');
+    }
+  }
+
+
   // ADDED BY SHAY
   void addBookmark(String path, int num){
     setState(() {
