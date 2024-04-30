@@ -32,9 +32,11 @@ class Bookmark {
 
 // going off of the example from https://pub.dev/packages/flutter_pdfview/example
 class _BookListState extends State<BookList> {
+
+  late PdfPageImage mythumbnail;
   
   List<String> bookUrls = [];
-  List<Uint8List> thumbnails = [];
+  List<PdfPageImage> thumbnails = [];
   List<Bookmark> bookmarks = []; // ADDED BY SHAY
   // using library of congress collection: https://www.loc.gov/collections/open-access-books/about-this-collection/rights-and-access/
   List<String> pdfUrls = [
@@ -47,48 +49,91 @@ class _BookListState extends State<BookList> {
   void initState() {
     super.initState();
     loadPdfAssets();
-    final pdfImageUint8List = generatePdfThumbnail('asset/cmdline.pdf');
+    generatePdfThumbnail('assets/cmdline.pdf');
   }
 
-  
+
+  // LOADS THUMBNAILS  
   // do what espresso3389 spells.
   // SEE: https://pub.dev/documentation/pdf_render/latest/ "PDF rendering APIs"
-  Future<Uint8List?> generatePdfThumbnail(String pdfAssetPath) async {
-    try {
-      // Open the PDF document from the asset
-      final PdfDocument doc = await PdfDocument.openAsset('assets/cmdline.pdf');
+  // perhaps use the suggestion here: https://stackoverflow.com/questions/65837703/getting-futureimage-cant-be-assigned-to-a-variable-of-type-image-in-this
+  Future<void> generatePdfThumbnail(String pdfAssetPath) async {
+    
+    // Get list of all assets
+    final assetBundle = DefaultAssetBundle.of(context);
+    final assetList = await assetBundle.load('AssetManifest.json');
+    final manifestMap = json.decode(utf8.decode(assetList.buffer.asUint8List()));
+    final assets = manifestMap.keys.where((String key) => key.contains('.pdf'));
 
-      // The first page is 1
-      final PdfPage page = await doc.getPage(1);
+    // FOR FILES IN ./assets
+    for (var asset in assets) {
+      try {
 
-      // Render the page as an image
-      final PdfPageImage pageImage = await page.render();
+        // Open the PDF document from the asset
+        final PdfDocument doc = await PdfDocument.openAsset(asset);
 
-      // Generate dart:ui.Image cache for later use by imageIfAvailable
-      await pageImage.createImageIfNotAvailable();
+        // The first page is 1
+        final PdfPage page = await doc.getPage(1);
 
-      // PDFDocument must be disposed as soon as possible
-      doc.dispose();
+        // Render the page as an image
+        final PdfPageImage pageImage = await page.render();
 
-      // Return the raw RGBA data of the rendered page image
-      // https://pub.dev/documentation/pdf_render/latest/pdf_render/PdfPageImage-class.html
-      // use raw image? https://api.flutter.dev/flutter/widgets/RawImage-class.html
-      return pageImage.pixels;
+        // Generate dart:ui.Image cache for later use by imageIfAvailable
+        await pageImage.createImageIfNotAvailable();
 
-    } catch (e) {
-      print('Error generating PDF thumbnail: $e');
-      return null;
+        setState(() {
+          thumbnails.add(pageImage);
+        });
+
+        doc.dispose();
+
+        // PDFDocument must be disposed as soon as possible
+        // 
+
+        // // Return the raw RGBA data of the rendered page image
+        // // https://pub.dev/documentation/pdf_render/latest/pdf_render/PdfPageImage-class.html
+        // // use raw image? https://api.flutter.dev/flutter/widgets/RawImage-class.html
+        // return pageImage.pixels;
+
+      } catch (e) {
+        print('Error generating PDF thumbnail: $e');
+        // return null;
+      }
     }
-  
+
+    // FOR PDFS LOADED FROM THE WEB
+    for (var url in pdfUrls) {
+      try {
+
+        //
+        final pdfFile2 = await createFileOfPdfUrl(url);
+
+        // Open the PDF document from the File
+        final PdfDocument doc = await PdfDocument.openFile(pdfFile2.path);
+
+        // The first page is 1
+        final PdfPage page = await doc.getPage(1);
+
+        // Render the page as an image
+        final PdfPageImage pageImage = await page.render();
+
+        // Generate dart:ui.Image cache for later use by imageIfAvailable
+        await pageImage.createImageIfNotAvailable();
+
+        setState(() {
+          thumbnails.add(pageImage);
+        });
+
+        doc.dispose();
+
+      } catch (e) {
+        print('Error generating PDF thumbnail: $e');
+        // return null;
+      }
+    }
   }
 
-  Future<Uint8List> getThumbnail(String pdfAssetPath) async {
-    Uint8List? result = await generatePdfThumbnail(pdfAssetPath);
-    if (result == null){
-      throw Exception('Failed to generate PDF thumbnail');
-    }
-    return result;
-  }
+
 
   // NEW
   Future<File> createFileOfPdfUrl(String pdfurl) async {
@@ -117,6 +162,7 @@ class _BookListState extends State<BookList> {
   }
 
 
+
   // adds the current location of the pdf file from assets in the device
   // adds them all to bookUrls
   Future<void> loadPdfAssets() async {
@@ -126,8 +172,6 @@ class _BookListState extends State<BookList> {
       final assetList = await assetBundle.load('AssetManifest.json');
       final manifestMap = json.decode(utf8.decode(assetList.buffer.asUint8List()));
       final assets = manifestMap.keys.where((String key) => key.contains('.pdf'));
-
-      
 
       // Iterate through each PDF asset and add its path to bookUrls
       for (var asset in assets) {
@@ -142,12 +186,14 @@ class _BookListState extends State<BookList> {
             bookUrls.add(pdfFile2.path);
         });
       }
-      
-
+    
     } catch (e) {
       print('Error loading PDF assets: $e');
     }
   }
+
+
+
 
   // ADDED BY SHAY: Method to filter PDFs based on the selected option
   List<String> filterPDFs(FilterOption option) {
@@ -169,6 +215,10 @@ class _BookListState extends State<BookList> {
     return bookUrls;
   }
 
+
+
+
+  // This returns the file of the pdf.
   Future<File> fromAsset(String asset) async {
     try {
       final data = await rootBundle.load(asset);
@@ -181,6 +231,7 @@ class _BookListState extends State<BookList> {
       throw Exception('Error parsing asset file: $e');
     }
   }
+
 
 
   // ADDED BY SHAY
@@ -199,8 +250,6 @@ class _BookListState extends State<BookList> {
   bool isBookmarked(String path, int num){
     return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -256,8 +305,7 @@ class _BookListState extends State<BookList> {
           return ListTile(
             title: Text(path.basename(bookUrls[index])), // THIS IS HARD CODED - FIX LATER
             //instead of icon, use future builder https://api.flutter.dev/flutter/widgets/FutureBuilder-class.html
-            leading: Icon(Icons.book_outlined),
-            
+            leading: RawImage(image: thumbnails[index].imageIfAvailable, fit: BoxFit.contain,),
             onTap: () {
               Navigator.push(
                 context,
@@ -276,6 +324,9 @@ class _BookListState extends State<BookList> {
     );
   }
 }
+
+
+
 
 // this will be our PDF page
 // again, pull this code from https://pub.dev/packages/flutter_pdfview/example
