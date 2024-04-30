@@ -154,17 +154,16 @@ class _BookListState extends State<BookList> {
   List<String> filterPDFs(FilterOption option) {
     switch (option) {
       case FilterOption.Alphabetical:
-  // Sort PDFs alphabetically
         bookUrls.sort((a, b) => path.basename(a).compareTo(path.basename(b)));
         setState(() {});
         break;
       case FilterOption.Chronological:
-  // Sort PDFs chronologically (based on their names or other metadata)
-  // Implement your sorting logic here
+        // Sort PDFs chronologically (based on their names or other metadata)
+        // Implement your sorting logic here
         break;
       case FilterOption.DateAdded:
-  // Sort PDFs based on date added
-  // Implement your sorting logic here
+        // Sort PDFs based on date added
+        // Implement your sorting logic here
         break;
     }
     return bookUrls;
@@ -200,7 +199,6 @@ class _BookListState extends State<BookList> {
   bool isBookmarked(String path, int num){
     return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
   }
-
 @override
 Widget build(BuildContext context) {
   return MaterialApp(
