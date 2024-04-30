@@ -16,7 +16,7 @@ import 'package:pdf_thumbnail/pdf_thumbnail.dart';
 enum FilterOption { Alphabetical, Chronological, DateAdded }
 
 class BookList extends StatefulWidget {
-  const BookList({super.key});
+ const BookList({super.key});
 
   @override
   State<BookList> createState() => _BookListState();
@@ -32,9 +32,13 @@ class Bookmark {
 
 // going off of the example from https://pub.dev/packages/flutter_pdfview/example
 class _BookListState extends State<BookList> {
+<<<<<<< HEAD
 
   late PdfPageImage mythumbnail;
   
+=======
+  List<String> recentlyAddedUrls = [];
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
   List<String> bookUrls = [];
   List<PdfPageImage> thumbnails = [];
   List<Bookmark> bookmarks = []; // ADDED BY SHAY
@@ -53,6 +57,7 @@ class _BookListState extends State<BookList> {
   }
 
 
+<<<<<<< HEAD
   // LOADS THUMBNAILS  
   // do what espresso3389 spells.
   // SEE: https://pub.dev/documentation/pdf_render/latest/ "PDF rendering APIs"
@@ -80,6 +85,31 @@ class _BookListState extends State<BookList> {
 
         // Generate dart:ui.Image cache for later use by imageIfAvailable
         await pageImage.createImageIfNotAvailable();
+=======
+// do what espresso3389 spells.
+// SEE: https://pub.dev/documentation/pdf_render/latest/ "PDF rendering APIs"
+  Future<Uint8List?> generatePdfThumbnail(String pdfAssetPath) async {
+    try {
+    // Open the PDF document from the asset
+    final PdfDocument doc = await PdfDocument.openAsset('assets/cmdline.pdf');
+
+    // The first page is 1
+    final PdfPage page = await doc.getPage(1);
+
+    // Render the page as an image
+    final PdfPageImage pageImage = await page.render();
+
+// Generate dart:ui.Image cache for later use by imageIfAvailable
+    await pageImage.createImageIfNotAvailable();
+
+// PDFDocument must be disposed as soon as possible
+    doc.dispose();
+
+    // Return the raw RGBA data of the rendered page image
+    // https://pub.dev/documentation/pdf_render/latest/pdf_render/PdfPageImage-class.html
+    // use raw image? https://api.flutter.dev/flutter/widgets/RawImage-class.html
+    return pageImage.pixels;
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
 
         setState(() {
           thumbnails.add(pageImage);
@@ -131,6 +161,10 @@ class _BookListState extends State<BookList> {
         // return null;
       }
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
   }
 
 
@@ -154,7 +188,7 @@ class _BookListState extends State<BookList> {
 
       await file.writeAsBytes(bytes, flush: true);
       completer.complete(file);
-    } catch (e) {
+      } catch (e) {
       throw Exception('Error parsing asset file!');
     }
 
@@ -162,31 +196,48 @@ class _BookListState extends State<BookList> {
   }
 
 
+<<<<<<< HEAD
 
   // adds the current location of the pdf file from assets in the device
   // adds them all to bookUrls
+=======
+// adds the current location of the pdf file from assets in the device
+// adds them all to bookUrls
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
   Future<void> loadPdfAssets() async {
     try {
-      // Get list of all assets
+// Get list of all assets
       final assetBundle = DefaultAssetBundle.of(context);
       final assetList = await assetBundle.load('AssetManifest.json');
       final manifestMap = json.decode(utf8.decode(assetList.buffer.asUint8List()));
       final assets = manifestMap.keys.where((String key) => key.contains('.pdf'));
 
+<<<<<<< HEAD
       // Iterate through each PDF asset and add its path to bookUrls
+=======
+
+
+// Iterate through each PDF asset and add its path to bookUrls
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
       for (var asset in assets) {
-        final pdfFile = await fromAsset(asset);
-        setState(() {
-          bookUrls.add(pdfFile.path);
-        });
+          final pdfFile = await fromAsset(asset);
+          setState(() {
+            bookUrls.add(pdfFile.path);
+          });
       }
       for (var url in pdfUrls) {
         final pdfFile2 = await createFileOfPdfUrl(url);
-        setState(() {
+          setState(() {
             bookUrls.add(pdfFile2.path);
+           recentlyAddedUrls.add(pdfFile2.path);
         });
       }
+<<<<<<< HEAD
     
+=======
+
+
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
     } catch (e) {
       print('Error loading PDF assets: $e');
     }
@@ -199,7 +250,6 @@ class _BookListState extends State<BookList> {
   List<String> filterPDFs(FilterOption option) {
     switch (option) {
       case FilterOption.Alphabetical:
-        // Sort PDFs alphabetically
         bookUrls.sort((a, b) => path.basename(a).compareTo(path.basename(b)));
         setState(() {});
         break;
@@ -233,8 +283,12 @@ class _BookListState extends State<BookList> {
   }
 
 
+<<<<<<< HEAD
 
   // ADDED BY SHAY
+=======
+// ADDED BY SHAY
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
   void addBookmark(String path, int num){
     setState(() {
       bookmarks.add(Bookmark(pdfPath: path, pageNum: num));
@@ -250,6 +304,7 @@ class _BookListState extends State<BookList> {
   bool isBookmarked(String path, int num){
     return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
   }
+<<<<<<< HEAD
 
   @override
   Widget build(BuildContext context) {
@@ -320,9 +375,111 @@ class _BookListState extends State<BookList> {
           );
         },
         ),
+=======
+@override
+Widget build(BuildContext context) {
+  return MaterialApp(
+    title: 'Terptales',
+    debugShowCheckedModeBanner: false,
+    home: Scaffold(
+      appBar: AppBar(title: const Text('Book List')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showFilterDialog(),
+        child: const Icon(Icons.filter_list),
+>>>>>>> 5e8f79a4466506f55e67cd30280186f3b16527b5
       ),
-    );
-  }
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: bookUrls.length,
+              itemBuilder: (context, index) => _buildBookTile(bookUrls[index]),
+            ),
+          ),
+          // Padding(
+          //   padding: EdgeInsets.all(16.0),
+          //   child: Text('Recently Added', style: Theme.of(context).textTheme.titleLarge),
+          // ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Recently Added', style: Theme.of(context).textTheme.titleLarge),
+                IconButton(
+                  icon: const Icon(Icons.add, color: Colors.black),
+                  onPressed: () {
+                    // Future implementation here
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: recentlyAddedUrls.length,
+              itemBuilder: (context, index) => _buildBookTile(recentlyAddedUrls[index]),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _applyFilter(FilterOption option) {
+  Navigator.pop(context);
+  filterPDFs(option);
+}
+
+Widget _buildBookTile(String bookPath) {
+  return ListTile(
+    title: Text(path.basename(bookPath)),
+    leading: Icon(Icons.book_outlined),
+    onTap: () => _openPDFScreen(bookPath),
+  );
+}
+
+void _openPDFScreen(String bookPath) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => PDFScreen(
+        path: bookPath,
+        addBookmark: addBookmark,
+        pdfBookmarks: bookmarks,
+        removeBookmark: removeBookmark,
+        isBookmarked: isBookmarked,
+      ),
+    ),
+  );
+}
+
+void _showFilterDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Filter PDFs'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          ListTile(
+            title: const Text('Alphabetical Order'),
+            onTap: () => _applyFilter(FilterOption.Alphabetical),
+          ),
+          ListTile(
+            title: const Text('Chronological Order'),
+            onTap: () => _applyFilter(FilterOption.Chronological),
+          ),
+          ListTile(
+            title: const Text('Date Added Order'),
+            onTap: () => _applyFilter(FilterOption.DateAdded),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 }
 
 
@@ -339,7 +496,8 @@ class PDFScreen extends StatefulWidget {
   final Function(String, int) isBookmarked;
 
   //PDFScreen({Key? key, this.path}) : super(key: key);
-  PDFScreen({Key? key, this.path, required this.addBookmark, required this.pdfBookmarks, required this.removeBookmark, required this.isBookmarked}) : super(key: key);  // ADDED BY SHAY
+  PDFScreen({Key? key, this.path, required this.addBookmark, required this.pdfBookmarks, required this.removeBookmark, required this.isBookmarked}) : super(key: key);
+  // ADDED BY SHAY
 
   _PDFScreenState createState() => _PDFScreenState();
 }
@@ -361,7 +519,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
       (bookmark) => bookmark.pdfPath == widget.path,
       orElse: () => Bookmark(pdfPath: '', pageNum: 0), // ADDED BY SHAY
     );
-    
+
     // If there is a bookmark go to it
     if (bookmark.pdfPath != '') {
       setState(() {
@@ -385,21 +543,21 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
         title: Text(path.basename(widget.path ?? 'No File Selected')),
         // ADDED BY SHAY
         actions: [IconButton(onPressed: () {
-          // Remove the bookmark if it is already in the map
+        // Remove the bookmark if it is already in the map
           if(widget.isBookmarked(widget.path!, currentPage!)){
             widget.removeBookmark(widget.path!, currentPage!);
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Removed')),);
           }
           else{
-            // Add the bookmark
+          // Add the bookmark
             widget.addBookmark(widget.path!, currentPage!);
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
           }
           setState(() {
             // Rebuild the widget
           });
-          //widget.addBookmark(widget.path!, currentPage!);
-        //ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
+  //widget.addBookmark(widget.path!, currentPage!);
+  //ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
         },
         // Change the bookmarked icon
         //Icons.bookmark
