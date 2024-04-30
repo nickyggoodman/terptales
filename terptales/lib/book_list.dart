@@ -12,6 +12,9 @@ import 'package:flutter/foundation.dart';
 import 'package:pdf_render/pdf_render_widgets.dart';
 import 'package:pdf_thumbnail/pdf_thumbnail.dart';
 
+// ADDED BY SHAY
+enum FilterOption { Alphabetical, Chronological, DateAdded }
+
 class BookList extends StatefulWidget {
   const BookList({super.key});
 
@@ -146,6 +149,25 @@ class _BookListState extends State<BookList> {
     }
   }
 
+  // ADDED BY SHAY: Method to filter PDFs based on the selected option
+  List<String> filterPDFs(FilterOption option) {
+    switch (option) {
+      case FilterOption.Alphabetical:
+        // Sort PDFs alphabetically
+        bookUrls.sort((a, b) => path.basename(a).compareTo(path.basename(b)));
+        setState(() {});
+        break;
+      case FilterOption.Chronological:
+        // Sort PDFs chronologically (based on their names or other metadata)
+        // Implement your sorting logic here
+        break;
+      case FilterOption.DateAdded:
+        // Sort PDFs based on date added
+        // Implement your sorting logic here
+        break;
+    }
+    return bookUrls;
+  }
 
   Future<File> fromAsset(String asset) async {
     try {
@@ -188,6 +210,45 @@ class _BookListState extends State<BookList> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(title: const Text ('Book List')),
+        // ADDED BY SHAY
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            // Show filter options dialog
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('Filter PDFs'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      ListTile(
+                        title: const Text('Alphabetical Order'),
+                        onTap: () {
+                          Navigator.pop(context, FilterOption.Alphabetical);
+                          filterPDFs(FilterOption.Alphabetical);
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('Chronological Order'),
+                        onTap: () {
+                          Navigator.pop(context, FilterOption.Chronological);
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('Date Added Order'),
+                        onTap: () {
+                          Navigator.pop(context, FilterOption.DateAdded);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+          child: const Icon(Icons.filter_list),
+        ),
         body: ListView.builder(
         itemCount: bookUrls.length, //THIS IS HARD CODED - FIX LATER
         itemBuilder: (context, index) {

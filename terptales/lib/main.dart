@@ -8,7 +8,6 @@ import 'package:terptales/book_list.dart';
 import 'package:terptales/settings_page.dart';
 import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 
-
 void main() {
   // // Initialize settings
     Settings.init();
