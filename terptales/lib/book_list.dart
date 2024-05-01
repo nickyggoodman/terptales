@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sensors_plus/sensors_plus.dart'; // for flip detection
 // import 'package:pdf_render/pdf_render_widgets.dart';
 // import 'package:pdf_thumbnail/pdf_thumbnail.dart';
+import 'painter.dart';
 
 // ADDED BY SHAY
 enum FilterOption { Alphabetical, Chronological, DateAdded }
@@ -34,7 +35,7 @@ to sort the PDFs and view recently added.
 TODO: add form to add url to 'pdfUrls' which should then also trigger a
 call to loadPdfAssets() which will update 'bookUrls' and 'pdfThumbnailMap'
 
-TODO: save pdfs loaded from web to assets somehow so that it is saved to the
+TODO: save pdfs loaded from web to assets somehow so that it is saved to the  
 device. currently, the pdfs can take some time to load (e.g. some are >3MB and
 can take considerable time to load on each rebuild)
 */
@@ -372,20 +373,23 @@ void _showFilterDialog() {
 }
 }
 
-// this will be our PDF page
-// again, pull this code from https://pub.dev/packages/flutter_pdfview/example
 class PDFScreen extends StatefulWidget {
   final String? path;
-  final Function(String, int) addBookmark; // ADDED BY SHAY
-  List<Bookmark>pdfBookmarks = [];
-  // UPDATED FOR SECOND PART BY SHAY
+  final Function(String, int) addBookmark;
+  final List<Bookmark> pdfBookmarks;
   final Function(String, int) removeBookmark;
   final Function(String, int) isBookmarked;
 
-  //PDFScreen({Key? key, this.path}) : super(key: key);
-  PDFScreen({Key? key, this.path, required this.addBookmark, required this.pdfBookmarks, required this.removeBookmark, required this.isBookmarked}) : super(key: key);
-  // ADDED BY SHAY
+  PDFScreen({
+    Key? key,
+    this.path,
+    required this.addBookmark,
+    required this.pdfBookmarks,
+    required this.removeBookmark,
+    required this.isBookmarked,
+  }) : super(key: key);
 
+  @override
   _PDFScreenState createState() => _PDFScreenState();
 }
 
@@ -396,10 +400,10 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
   int? currentPage = 0;
   bool isReady = false;
   String errorMessage = '';
+  bool isAnnotating = false; // Track whether annotating is enabled or not
 
-  // ADDED BY SHAY
   @override
-  void initState(){
+  void initState() {
     super.initState();
     // Check if there is a bookmark for the current pdf path
     final bookmark = widget.pdfBookmarks.lastWhere(
@@ -416,52 +420,55 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context){
-    // Define the bookmark icon based on the bookmark status ADDED BY SHAY
-    late IconData bookmarkIcon;
-    if (widget.isBookmarked(widget.path!, currentPage!)) {
-      bookmarkIcon = Icons.bookmark;
-    } else {
-      bookmarkIcon = Icons.bookmark_border;
-    }
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(path.basename(widget.path ?? 'No File Selected')),
-        // ADDED BY SHAY
-        actions: [IconButton(onPressed: () {
-        // Remove the bookmark if it is already in the map
-          if(widget.isBookmarked(widget.path!, currentPage!)){
-            widget.removeBookmark(widget.path!, currentPage!);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Removed')),);
-          }
-          else{
-          // Add the bookmark
-            widget.addBookmark(widget.path!, currentPage!);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
-          }
-          setState(() {
-            // Rebuild the widget
-          });
-  //widget.addBookmark(widget.path!, currentPage!);
-  //ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark Added')),);
-        },
-        // Change the bookmarked icon
-        //Icons.bookmark
-        icon: Icon(bookmarkIcon),),],
+        actions: [
+          IconButton(
+            onPressed: () {
+              if (widget.isBookmarked(widget.path!, currentPage!)) {
+                widget.removeBookmark(widget.path!, currentPage!);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Bookmark Removed')));
+              } else {
+                widget.addBookmark(widget.path!, currentPage!);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Bookmark Added')));
+              }
+              setState(() {});
+            },
+            icon: Icon(
+              widget.isBookmarked(widget.path!, currentPage!)
+                  ? Icons.bookmark
+                  : Icons.bookmark_border,
+            ),
+          ),
+          // Toggle button for annotating
+          IconButton(
+            onPressed: () {
+              setState(() {
+                isAnnotating = !isAnnotating;
+              });
+            },
+            icon: Icon(
+              isAnnotating ? Icons.edit : Icons.edit_off,
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: <Widget>[
           PDFView(
-            filePath: widget.path, //gets the path of the book from the widget
-            enableSwipe: true, 
-            swipeHorizontal: true, // like a book
+            filePath: widget.path,
+            enableSwipe: true,
+            swipeHorizontal: true,
             autoSpacing: false,
             pageFling: true,
             pageSnap: true,
-            defaultPage: currentPage!, //???
-            fitPolicy: FitPolicy.BOTH, //???
-            preventLinkNavigation:
-              false,
+            defaultPage: currentPage!,
+            fitPolicy: FitPolicy.BOTH,
+            preventLinkNavigation: false,
             onRender: (_pages) {
               setState(() {
                 pages = _pages;
@@ -494,17 +501,230 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
             },
           ),
           errorMessage.isEmpty
-            ? !isReady
-              ? const Center(
-                  child: CircularProgressIndicator(),
-              )
-              : Container()
-            : Center(
-              child: Text(errorMessage),
-            )
+              ? !isReady
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : Container()
+              : Center(
+                  child: Text(errorMessage),
+                ),
+          // Show drawing room screen only if annotating is enabled
+          if (isAnnotating)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: DrawingRoomScreen(),
+            ),
         ],
       ),
     );
   }
+}
 
+
+// code taken from: https://github.com/dannndi/flutter_drawing_app/tree/main
+class DrawingRoomScreen extends StatefulWidget {
+const DrawingRoomScreen({Key? key}) : super(key: key);
+
+
+
+
+@override
+State<DrawingRoomScreen> createState() => _DrawingRoomScreenState();
+}
+
+
+
+
+class _DrawingRoomScreenState extends State<DrawingRoomScreen> {
+final List<Color> availableColors = [
+  Colors.red,
+  Colors.amber,
+  Colors.blue,
+  Colors.green,
+  Colors.brown,
+  Colors.black, // Added black color
+];
+
+
+
+
+List<DrawingPoint> historyDrawingPoints = [];
+List<DrawingPoint> drawingPoints = [];
+Color selectedColor = Colors.black;
+double selectedWidth = 2.0;
+DrawingPoint? currentDrawingPoint;
+
+
+
+
+@override
+Widget build(BuildContext context) {
+  return Stack(
+    children: <Widget>[
+      GestureDetector(
+        onPanStart: (details) {
+          setState(() {
+            currentDrawingPoint = DrawingPoint(
+              id: DateTime.now().microsecondsSinceEpoch,
+              offsets: [details.localPosition],
+              color: selectedColor,
+              width: selectedWidth,
+            );
+
+
+
+
+            if (currentDrawingPoint == null) return;
+            drawingPoints.add(currentDrawingPoint!);
+            historyDrawingPoints = List.of(drawingPoints);
+          });
+        },
+        onPanUpdate: (details) {
+          setState(() {
+            if (currentDrawingPoint == null) return;
+
+
+
+
+            currentDrawingPoint = currentDrawingPoint?.copyWith(
+              offsets: currentDrawingPoint!.offsets..add(details.localPosition),
+            );
+            drawingPoints.last = currentDrawingPoint!;
+            historyDrawingPoints = List.of(drawingPoints);
+          });
+        },
+        onPanEnd: (_) {
+          currentDrawingPoint = null;
+          // Automatically save the drawing points when the user stops drawing
+          saveAnnotations();
+        },
+        child: CustomPaint(
+          painter: DrawingPainter(drawingPoints: drawingPoints),
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height,
+          ),
+        ),
+      ),
+      // Undo Button
+      Positioned(
+        top: 20,
+        left: 20,
+        child: IconButton(
+          onPressed: undo,
+          icon: Icon(Icons.undo),
+        ),
+      ),
+      // Redo Button
+      Positioned(
+        top: 20,
+        left: 60,
+        child: IconButton(
+          onPressed: redo,
+          icon: Icon(Icons.redo),
+        ),
+      ),
+      // Color Palette
+      Positioned(
+        bottom: 20,
+        left: 0,
+        right: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var color in availableColors)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedColor = color;
+                    });
+                  },
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    margin: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                      border: Border.all(
+                        color: selectedColor == color ? Colors.black : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+
+
+
+void saveAnnotations() {
+    // Convert drawing points to JSON
+    final jsonData =
+        jsonEncode(drawingPoints.map((point) => point.toJson()).toList());
+
+    // Save JSON data to file
+    final file = File('annotations.json');
+    file.writeAsString(jsonData);
+  }
+
+  void undo() {
+    if (drawingPoints.isNotEmpty) {
+      setState(() {
+        historyDrawingPoints.add(drawingPoints.removeLast());
+      });
+    }
+  }
+
+  void redo() {
+    if (historyDrawingPoints.isNotEmpty) {
+      setState(() {
+        drawingPoints.add(historyDrawingPoints.removeLast());
+      });
+    }
+  }
+}
+
+class DrawingPainter extends CustomPainter {
+  final List<DrawingPoint> drawingPoints;
+
+  DrawingPainter({required this.drawingPoints});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var drawingPoint in drawingPoints) {
+      final paint = Paint()
+        ..color = drawingPoint.color
+        ..isAntiAlias = true
+        ..strokeWidth = drawingPoint.width
+        ..strokeCap = StrokeCap.round;
+
+      for (var i = 0; i < drawingPoint.offsets.length; i++) {
+        var notLastOffset = i != drawingPoint.offsets.length - 1;
+
+        if (notLastOffset) {
+          final current = drawingPoint.offsets[i];
+          final next = drawingPoint.offsets[i + 1];
+          canvas.drawLine(current, next, paint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
 }
