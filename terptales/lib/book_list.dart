@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'package:/pdf_render/pdf_render.dart';
+import 'package:pdf_render/pdf_render.dart';
 import 'package:flutter/foundation.dart';
-import 'package:pdf_render/pdf_render_widgets.dart';
-import 'package:pdf_thumbnail/pdf_thumbnail.dart';
+// import 'package:pdf_render/pdf_render_widgets.dart';
+// import 'package:pdf_thumbnail/pdf_thumbnail.dart';
 
 // ADDED BY SHAY
 enum FilterOption { Alphabetical, Chronological, DateAdded }
@@ -30,141 +30,118 @@ class Bookmark {
   Bookmark({required this.pdfPath, required this.pageNum});
 }
 
-// going off of the example from https://pub.dev/packages/flutter_pdfview/example
-class _BookListState extends State<BookList> {
+/*
+This class generates the actual list of books. It generates the a list of 
+bookfile titles and book thumbnails which can be tapped to navigate to the 
+PDFScreen widget, which is where the pdf is displayed. There is functionality 
+to sort the PDFs and view recently added. 
+- Nicky G.
 
-  late PdfPageImage mythumbnail;
+TODO: add form to add url to 'pdfUrls' which should then also trigger a
+call to loadPdfAssets() which will update 'bookUrls' and 'pdfThumbnailMap'
+
+TODO: save pdfs loaded from web to assets somehow so that it is saved to the
+device. currently, the pdfs can take some time to load (e.g. some are >3MB and
+can take considerable time to load on each rebuild)
+*/
+class _BookListState extends State<BookList> {
   
   List<String> bookUrls = [];
-  List<PdfPageImage> thumbnails = [];
+  // List<PdfPageImage> thumbnails = []; deprecated -Nicky G.
   List<Bookmark> bookmarks = []; // ADDED BY SHAY
+  var pdfThumbnailMap = Map();
   // using library of congress collection: https://www.loc.gov/collections/open-access-books/about-this-collection/rights-and-access/
   List<String> pdfUrls = [
     "https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/71/64/80/2020716480/2020716480.pdf",
     "https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/71/97/07/2020719707/2020719707.pdf",
     "https://tile.loc.gov/storage-services/master/gdc/gdcebookspublic/20/20/71/99/65/2020719965/2020719965.pdf",
+    "https://ia803207.us.archive.org/35/items/in.ernet.dli.2015.460385/2015.460385.Bonjour-Tristesse.pdf",
   ];
 
   @override
   void initState() {
     super.initState();
     loadPdfAssets();
-    generatePdfThumbnail('assets/cmdline.pdf');
   }
 
 
-  // LOADS THUMBNAILS  
-  // do what espresso3389 spells.
-  // SEE: https://pub.dev/documentation/pdf_render/latest/ "PDF rendering APIs"
-  // perhaps use the suggestion here: https://stackoverflow.com/questions/65837703/getting-futureimage-cant-be-assigned-to-a-variable-of-type-image-in-this
-  Future<void> generatePdfThumbnail(String pdfAssetPath) async {
+  /*
+  Generates a thumbnail for a single pdf from /assets. this is useful for mapping
+  the pdf to its thumbnail. An example of this function was pulled from the
+  pdf_render package documentation "PDF rendering APIs"
+  https://pub.dev/documentation/pdf_render/latest/
+  - Nicky G.
+  */
+  Future<PdfPageImage?> generatePdfAssetThumbnail(String asset) async {
     
-    // Get list of all assets
-    final assetBundle = DefaultAssetBundle.of(context);
-    final assetList = await assetBundle.load('AssetManifest.json');
-    final manifestMap = json.decode(utf8.decode(assetList.buffer.asUint8List()));
-    final assets = manifestMap.keys.where((String key) => key.contains('.pdf'));
-
-    // FOR FILES IN ./assets
-    for (var asset in assets) {
-      try {
-
-        // Open the PDF document from the asset
-        final PdfDocument doc = await PdfDocument.openAsset(asset);
-
-        // The first page is 1
-        final PdfPage page = await doc.getPage(1);
-
-        // Render the page as an image
-        final PdfPageImage pageImage = await page.render();
-
-        // Generate dart:ui.Image cache for later use by imageIfAvailable
-        await pageImage.createImageIfNotAvailable();
-
-        setState(() {
-          thumbnails.add(pageImage);
-        });
-
-        doc.dispose();
-
-        // PDFDocument must be disposed as soon as possible
-        // 
-
-        // // Return the raw RGBA data of the rendered page image
-        // // https://pub.dev/documentation/pdf_render/latest/pdf_render/PdfPageImage-class.html
-        // // use raw image? https://api.flutter.dev/flutter/widgets/RawImage-class.html
-        // return pageImage.pixels;
-
-      } catch (e) {
-        print('Error generating PDF thumbnail: $e');
-        // return null;
-      }
-    }
-
-    // FOR PDFS LOADED FROM THE WEB
-    for (var url in pdfUrls) {
-      try {
-
-        //
-        final pdfFile2 = await createFileOfPdfUrl(url);
-
-        // Open the PDF document from the File
-        final PdfDocument doc = await PdfDocument.openFile(pdfFile2.path);
-
-        // The first page is 1
-        final PdfPage page = await doc.getPage(1);
-
-        // Render the page as an image
-        final PdfPageImage pageImage = await page.render();
-
-        // Generate dart:ui.Image cache for later use by imageIfAvailable
-        await pageImage.createImageIfNotAvailable();
-
-        setState(() {
-          thumbnails.add(pageImage);
-        });
-
-        doc.dispose();
-
-      } catch (e) {
-        print('Error generating PDF thumbnail: $e');
-        // return null;
-      }
-    }
-  }
-
-
-
-  // NEW
-  Future<File> createFileOfPdfUrl(String pdfurl) async {
-    Completer<File> completer = Completer();
-    print("Start download file from internet!");
     try {
-      // "https://berlin2017.droidcon.cod.newthinking.net/sites/global.droidcon.cod.newthinking.net/files/media/documents/Flutter%20-%2060FPS%20UI%20of%20the%20future%20%20-%20DroidconDE%2017.pdf";
-      // final url = "https://pdfkit.org/docs/guide.pdf";
-      final url = pdfurl;
-      final filename = url.substring(url.lastIndexOf("/") + 1);
-      var request = await HttpClient().getUrl(Uri.parse(url));
-      var response = await request.close();
-      var bytes = await consolidateHttpClientResponseBytes(response);
-      var dir = await getApplicationDocumentsDirectory();
-      print("Download files");
-      print("${dir.path}/$filename");
-      File file = File("${dir.path}/$filename");
+      // Open the PDF document from the asset
+      final PdfDocument doc = await PdfDocument.openAsset(asset);
 
-      await file.writeAsBytes(bytes, flush: true);
-      completer.complete(file);
+      // The first page is 1
+      final PdfPage page = await doc.getPage(1);
+
+      // Render the page as an image
+      final PdfPageImage pageImage = await page.render();
+
+      // Generate dart:ui.Image cache for later use by imageIfAvailable
+      await pageImage.createImageIfNotAvailable();
+
+      doc.dispose();
+
+      return pageImage;
+
     } catch (e) {
-      throw Exception('Error parsing asset file!');
+      print('generatePdfAssetThumbnail Error generating PDF thumbnail FROM ASSET: $e');
+      return null;
     }
-
-    return completer.future;
   }
 
 
+  /*
+  Generates a thumbnail for a single pdf via url. this is useful for mapping
+  the pdf to its thumbnail. An example of this function was pulled from the
+  pdf_render package documentation "PDF rendering APIs"
+  https://pub.dev/documentation/pdf_render/latest/
+  - Nicky G.
+  */
+  Future<PdfPageImage?> generatePdfUrlThumbnail(String url) async {
+  
+    try {
+      //
+      final pdfFile2 = await createFileOfPdfUrl(url);
 
-  // adds the current location of the pdf file from assets in the device
-  // adds them all to bookUrls
+      // Open the PDF document from the File
+      final PdfDocument doc = await PdfDocument.openFile(pdfFile2.path);
+
+      // The first page is 1
+      final PdfPage page = await doc.getPage(1);
+
+      // Render the page as an image
+      final PdfPageImage pageImage = await page.render();
+
+      // Generate dart:ui.Image cache for later use by imageIfAvailable
+      await pageImage.createImageIfNotAvailable();
+
+      doc.dispose();
+
+      return pageImage;
+
+    } catch (e) {
+      print('generatePdfAssetThumbnail Error generating PDF thumbnail FROM URL: $e');
+      return null;
+    }
+  
+  }
+
+
+  /*
+  This function adds the current location of the pdf file from assets in the device
+  adds them all to 'bookUrls' List<string> while it does this, it also calls the
+  function to load the thumbnail for the associated source (asset or url) and adds
+  it to the 'pdfThumbnailMap' k: string -> v: PdfPageImage 
+  - Nicky G.
+  */
   Future<void> loadPdfAssets() async {
     try {
       // Get list of all assets
@@ -176,14 +153,18 @@ class _BookListState extends State<BookList> {
       // Iterate through each PDF asset and add its path to bookUrls
       for (var asset in assets) {
         final pdfFile = await fromAsset(asset);
+        final thumbnailOfAsset = await generatePdfAssetThumbnail(asset);
         setState(() {
           bookUrls.add(pdfFile.path);
+          pdfThumbnailMap[pdfFile.path] = thumbnailOfAsset;
         });
       }
       for (var url in pdfUrls) {
         final pdfFile2 = await createFileOfPdfUrl(url);
+        final thumbnailOfUrl = await generatePdfUrlThumbnail(url); 
         setState(() {
-            bookUrls.add(pdfFile2.path);
+          bookUrls.add(pdfFile2.path);
+          pdfThumbnailMap[pdfFile2.path] = thumbnailOfUrl;
         });
       }
     
@@ -193,6 +174,55 @@ class _BookListState extends State<BookList> {
   }
 
 
+  /*
+  This function returns the file that is associated with the pdf that is given 
+  in /assets. - Nicky G.
+  */
+  Future<File> fromAsset(String asset) async {
+    try {
+      final data = await rootBundle.load(asset);
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/${path.basename(asset)}'); // Use path.basename
+      final bytes = data.buffer.asUint8List();
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } catch (e) {
+      throw Exception('Error parsing asset file: $e');
+    }
+  }
+
+
+  /*
+  This function returns the file that is associated with the pdf that is given 
+  from a url from the internet. Some examples are given in the hardcoded version
+  of the url list. 
+  - Nicky G.
+  */
+  Future<File> createFileOfPdfUrl(String pdfurl) async {
+    Completer<File> completer = Completer();
+    // print("Start download file from internet!");
+    try {
+
+      final url = pdfurl;
+      final filename = url.substring(url.lastIndexOf("/") + 1);
+      var request = await HttpClient().getUrl(Uri.parse(url));
+      var response = await request.close();
+      var bytes = await consolidateHttpClientResponseBytes(response);
+      var dir = await getApplicationDocumentsDirectory();
+      // print("Download files");
+      // print("${dir.path}/$filename");
+      File file = File("${dir.path}/$filename");
+
+      await file.writeAsBytes(bytes, flush: true);
+      completer.complete(file);
+      
+    } catch (e) {
+      throw Exception('Error parsing asset file!');
+    }
+
+    return completer.future;
+
+  }
 
 
   // ADDED BY SHAY: Method to filter PDFs based on the selected option
@@ -214,23 +244,6 @@ class _BookListState extends State<BookList> {
     }
     return bookUrls;
   }
-  
-
-
-  // This returns the file of the pdf.
-  Future<File> fromAsset(String asset) async {
-    try {
-      final data = await rootBundle.load(asset);
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/${path.basename(asset)}'); // Use path.basename
-      final bytes = data.buffer.asUint8List();
-      await file.writeAsBytes(bytes, flush: true);
-      return file;
-    } catch (e) {
-      throw Exception('Error parsing asset file: $e');
-    }
-  }
-
 
 
   // ADDED BY SHAY
@@ -249,6 +262,7 @@ class _BookListState extends State<BookList> {
   bool isBookmarked(String path, int num){
     return bookmarks.any((bookmark) => bookmark.pdfPath == path && bookmark.pageNum == num);
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -298,13 +312,16 @@ class _BookListState extends State<BookList> {
           child: const Icon(Icons.filter_list),
         ),
         body: ListView.builder(
-        itemCount: bookUrls.length, //THIS IS HARD CODED - FIX LATER
+        itemCount: bookUrls.length, 
         itemBuilder: (context, index) {
-          print(bookUrls[index]);
+          // print(bookUrls[index]);
           return ListTile(
-            title: Text(path.basename(bookUrls[index])), // THIS IS HARD CODED - FIX LATER
-            //instead of icon, use future builder https://api.flutter.dev/flutter/widgets/FutureBuilder-class.html
-            leading: RawImage(image: thumbnails[index].imageIfAvailable, fit: BoxFit.contain,),
+            title: Text(path.basename(bookUrls[index])),
+            // pdfThumbnailMap takes the name of the file (e.g. 'cmdline.pdf') 
+            // and maps to the thumbnail that was generated by both of the functions
+            // 'generatePdfUrlThumbnail()' and 'generatePdfAssetThumbnail()'
+            // which are called in the 'loadPdfAssets()' function. - Nicky G.
+            leading: RawImage(image: pdfThumbnailMap[bookUrls[index]].imageIfAvailable, fit: BoxFit.contain,),
             onTap: () {
               Navigator.push(
                 context,
@@ -325,10 +342,16 @@ class _BookListState extends State<BookList> {
 }
 
 
+/*
+This class generates the pdf view page, that is, the place where you can flip 
+through the pdf, bookmark the pdf, and annotate the pdf. This is accessed by
+tapping on the book on the book_list tab. 
 
+Example pulled from:
+https://pub.dev/packages/flutter_pdfview/example
 
-// this will be our PDF page
-// again, pull this code from https://pub.dev/packages/flutter_pdfview/example
+- Nicky G.
+*/
 class PDFScreen extends StatefulWidget {
   final String? path;
   final Function(String, int) addBookmark; // ADDED BY SHAY
