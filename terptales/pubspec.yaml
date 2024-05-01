@@ -49,6 +49,7 @@ dependencies:
   shared_preferences: ^2.2.2
   foundation: ^0.0.5
   pdf_render: ^1.4.6
+  sensors_plus: ^5.0.1
 
 
 
