@@ -402,6 +402,12 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
   String errorMessage = '';
   bool isAnnotating = false; // Track whether annotating is enabled or not
 
+  // for gyroscope sensor
+  double _gyroX = 0.0; 
+  double _gyroY = 0.0; 
+  double _gyroZ = 0.0; 
+  
+
   @override
   void initState() {
     super.initState();
@@ -417,13 +423,33 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
         currentPage = bookmark.pageNum;
       });
     }
+
+    /*
+    https://pub.dev/packages/sensors_plus
+    https://plus.fluttercommunity.dev/docs/sensors_plus/usage/
+    gyroscope stream here.
+    */ 
+    gyroscopeEventStream(samplingPeriod: SensorInterval.normalInterval).listen((event) {
+      setState(() {
+        _gyroX = event.x;
+        _gyroY = event.y;
+        _gyroZ = event.z;
+      });
+    });
+
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(path.basename(widget.path ?? 'No File Selected')),
+        title: Column(
+          children: [
+            Text(path.basename(widget.path ?? 'No File Selected')),
+            //Text('orientation: x:${_gyroX}, y:${_gyroY}, z:${_gyroZ},'),
+          ]
+          
+        ),
         actions: [
           IconButton(
             onPressed: () {
