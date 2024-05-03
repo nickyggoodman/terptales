@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,9 +9,13 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:pdf_render/pdf_render.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sensors_plus/sensors_plus.dart'; // for flip detection
-// import 'package:pdf_render/pdf_render_widgets.dart';
-// import 'package:pdf_thumbnail/pdf_thumbnail.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'painter.dart';
+// import 'package:terptales/theme_data_style.dart';
+import 'package:terptales/theme_provider.dart';
+import 'package:provider/provider.dart';
+
+
 
 // ADDED BY SHAY
 enum FilterOption { Alphabetical, Chronological, DateAdded }
@@ -32,10 +35,10 @@ PDFScreen widget, which is where the pdf is displayed. There is functionality
 to sort the PDFs and view recently added. 
 - Nicky G.
 
-TODO: add form to add url to 'pdfUrls' which should then also trigger a
+Todo: add form to add url to 'pdfUrls' which should then also trigger a
 call to loadPdfAssets() which will update 'bookUrls' and 'pdfThumbnailMap'
 
-TODO: save pdfs loaded from web to assets somehow so that it is saved to the  
+Todo: save pdfs loaded from web to assets somehow so that it is saved to the  
 device. currently, the pdfs can take some time to load (e.g. some are >3MB and
 can take considerable time to load on each rebuild)
 */
@@ -268,51 +271,75 @@ class _BookListState extends State<BookList> {
   }
 
 
+//ADDED BY JUSTINAH
  @override
 Widget build(BuildContext context) {
   return MaterialApp(
     title: 'Terptales',
     debugShowCheckedModeBanner: false,
-    home: Scaffold(
-      appBar: AppBar(title: const Text('Book List')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFilterDialog(),
-        child: const Icon(Icons.filter_list),
+    home: Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) => Scaffold(
+        backgroundColor: themeProvider.themeDataStyle.scaffoldBackgroundColor, 
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showFilterDialog(),
+          child: const Icon(Icons.filter_list),
+        ),
+        body: Column(
+          children: [
+            Padding(
+  padding: const EdgeInsets.all(16.0),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.start, //ADDED BY JUSTINAH
+    children: [
+      
+      Text(
+        'Book List',
+        style: GoogleFonts.taprom(
+          textStyle: TextStyle(
+            fontStyle: FontStyle.italic,
+            fontSize: 30,
+           color: themeProvider.themeDataStyle.textTheme.bodyLarge?.color, //ADDED BY JUSTINAH
+        ),
+        ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: bookUrls.length,
-              itemBuilder: (context, index) => _buildBookTile(bookUrls[index]),
+    ],
+  ),
+),
+            Expanded(
+              child: ListView.builder(
+                itemCount: bookUrls.length,
+                itemBuilder: (context, index) => _buildBookTile(bookUrls[index]),
+              ),
             ),
-          ),
-          // Padding(
-          //   padding: EdgeInsets.all(16.0),
-          //   child: Text('Recently Added', style: Theme.of(context).textTheme.titleLarge),
-          // ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Recently Added', style: Theme.of(context).textTheme.titleLarge),
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.black),
-                  onPressed: () {
-                    // Future implementation here
-                  },
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recently Added',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.taprom( color: themeProvider.themeDataStyle.textTheme.bodyLarge?.color, //ADDED BY JUSTINAH
+                      textStyle: const TextStyle(fontStyle: FontStyle.italic,fontSize: 30),
+                    ),
+                  ),
+                  IconButton(
+                    icon:  Icon(Icons.add, color: themeProvider.themeDataStyle.textTheme.bodyLarge?.color),
+                    onPressed: () {
+                      // Future implementation here
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: recentlyAddedUrls.length,
-              itemBuilder: (context, index) => _buildBookTile(recentlyAddedUrls[index]),
+            Expanded(
+              child: ListView.builder(
+                itemCount: recentlyAddedUrls.length,
+                itemBuilder: (context, index) => _buildBookTile(recentlyAddedUrls[index]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
@@ -323,11 +350,26 @@ void _applyFilter(FilterOption option) {
   filterPDFs(option);
 }
 
+/* Builds a ListTile representing a book with its title set to the base name of the book file
+extracted from the provided bookPath. The text color of the title dynamically adapts to the
+current theme using the ThemeProvider. The leading widget displays an image thumbnail of
+the book obtained from pdfThumbnailMap. Tapping the tile opens the PDF screen for the selected book.
+-Justinah Bashua*/
 Widget _buildBookTile(String bookPath) {
-  return ListTile(
-    title: Text(path.basename(bookPath)),
-    leading: RawImage(image: pdfThumbnailMap[bookPath].imageIfAvailable, fit: BoxFit.contain,),
-    onTap: () => _openPDFScreen(bookPath),
+  return Consumer<ThemeProvider>(
+    builder: (context, themeProvider, child) => ListTile(
+      title: Text(
+        path.basename(bookPath),
+        style: TextStyle(
+          color: themeProvider.themeDataStyle.textTheme.bodyLarge?.color,
+        ),
+      ),
+      leading: RawImage(
+        image: pdfThumbnailMap[bookPath].imageIfAvailable,
+        fit: BoxFit.contain,
+      ),
+      onTap: () => _openPDFScreen(bookPath),
+    ),
   );
 }
 
@@ -511,7 +553,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
                 ),
           // Show drawing room screen only if annotating is enabled
           if (isAnnotating)
-            Positioned(
+            const Positioned(
               top: 0,
               left: 0,
               right: 0,
@@ -546,7 +588,7 @@ final List<Color> availableColors = [
   Colors.blue,
   Colors.green,
   Colors.brown,
-  Colors.black, // Added black color
+  Colors.black, 
 ];
 
 
@@ -616,7 +658,7 @@ Widget build(BuildContext context) {
         left: 20,
         child: IconButton(
           onPressed: undo,
-          icon: Icon(Icons.undo),
+          icon: const Icon(Icons.undo),
         ),
       ),
       // Redo Button
@@ -625,7 +667,7 @@ Widget build(BuildContext context) {
         left: 60,
         child: IconButton(
           onPressed: redo,
-          icon: Icon(Icons.redo),
+          icon: const Icon(Icons.redo),
         ),
       ),
       // Color Palette
