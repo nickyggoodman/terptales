@@ -436,6 +436,7 @@ class PDFScreen extends StatefulWidget {
 }
 
 class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
+  
   final Completer<PDFViewController> _controller =
       Completer<PDFViewController>();
   int? pages = 0;
@@ -445,9 +446,15 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
   bool isAnnotating = false; // Track whether annotating is enabled or not
 
   // for gyroscope sensor
+  late StreamSubscription _gyroSubscription;
   double _gyroX = 0.0; 
   double _gyroY = 0.0; 
   double _gyroZ = 0.0; 
+
+  // for page changes
+
+  //in milliseconds
+  int _lastPageTurnTime = DateTime.now().millisecondsSinceEpoch;
   
 
   @override
@@ -471,14 +478,35 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
     https://plus.fluttercommunity.dev/docs/sensors_plus/usage/
     gyroscope stream here.
     */ 
-    gyroscopeEventStream(samplingPeriod: SensorInterval.normalInterval).listen((event) {
+    _gyroSubscription = gyroscopeEventStream(samplingPeriod: SensorInterval.normalInterval).listen((event) {
       setState(() {
         _gyroX = event.x;
         _gyroY = event.y;
         _gyroZ = event.z;
+        DateTime dateTimeGyro = DateTime.now();
+        //print('x: $_gyroX y: $_gyroY, z: $_gyroZ}');
+        if (dateTimeGyro.millisecondsSinceEpoch - _lastPageTurnTime > 2000){
+          if (_gyroY > 5){
+            currentPage = currentPage! + 1;
+            _controller.future.then((value) => value.setPage(currentPage!));
+            _lastPageTurnTime = dateTimeGyro.millisecondsSinceEpoch;
+          }
+          if (_gyroY < -5) {
+            currentPage = currentPage! - 1;
+            _controller.future.then((value) => value.setPage(currentPage!));
+            _lastPageTurnTime = dateTimeGyro.millisecondsSinceEpoch;
+          }
+        }
       });
     });
 
+  }
+
+  @override
+  void dispose() {
+    // Cancel the subscription when the widget is disposed
+    _gyroSubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -488,9 +516,10 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
         title: Column(
           children: [
             Text(path.basename(widget.path ?? 'No File Selected')),
-            //Text('orientation: x:${_gyroX}, y:${_gyroY}, z:${_gyroZ},'),
+            Text('x:${_gyroX}'),
+            Text('y:${_gyroY}'), // y will be less than -1 for right page turn (forward a page), greater than 1 for left page flip (back a page)
+            Text('z:${_gyroZ}')
           ]
-          
         ),
         actions: [
           IconButton(
@@ -523,11 +552,43 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
               isAnnotating ? Icons.edit : Icons.edit_off,
             ),
           ),
+          FutureBuilder<PDFViewController>(
+            future: _controller.future,
+            builder: (context, AsyncSnapshot<PDFViewController> snapshot) {
+              if (snapshot.hasData) {
+                return IconButton(
+                  onPressed: () async {
+                    await snapshot.data!.setPage(currentPage! - 1);
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: "Go to ${currentPage! + 1}",
+                );
+              }
+
+              return Container();
+            },
+          ),
+          FutureBuilder<PDFViewController>(
+            future: _controller.future,
+            builder: (context, AsyncSnapshot<PDFViewController> snapshot) {
+              if (snapshot.hasData) {
+                return IconButton(
+                  onPressed: () async {
+                    await snapshot.data!.setPage(currentPage! + 1);
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                  tooltip: "Go to ${pages! + 1}",
+                );
+              }
+
+              return Container();
+            },
+          ),
         ],
       ),
       body: Stack(
         children: <Widget>[
-          PDFView(
+          PDFView( 
             filePath: widget.path,
             enableSwipe: true,
             swipeHorizontal: true,
@@ -556,6 +617,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
               print('$page: ${error.toString()}');
             },
             onViewCreated: (PDFViewController PDFViewController) {
+              // controller is alive! -Nicky G.
               _controller.complete(PDFViewController);
             },
             onLinkHandler: (String? uri) {
