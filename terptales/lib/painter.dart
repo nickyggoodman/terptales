@@ -1,5 +1,17 @@
-import 'package:flutter/material.dart';
+/* This file defines a `DrawingPoint` class used for representing points 
+in a drawing application. Each `DrawingPoint` contains an `id`, a list of 
+`offsets`, a `color`, and a `width`. The `copyWith` method is implemented 
+to create a copy of a `DrawingPoint` with optional parameters. 
+Additionally, the `toJson` method is provided to serialize a `DrawingPoint` 
+object into a JSON format for storage or transmission. This class is used 
+in conjunction with the drawing functionality implemented in the referenced 
+GitHub repository.
+-Shreya M*/
+
 // code taken from: https://github.com/dannndi/flutter_drawing_app/tree/main
+
+import 'package:flutter/material.dart';
+
 
 
 class DrawingPoint {
@@ -36,7 +48,7 @@ class DrawingPoint {
    return {
      'id': id,
      'offsets': offsets.map((offset) => {'x': offset.dx, 'y': offset.dy}).toList(),
-     'color': color.value, // Store color as an int value
+     'color': color.value, 
      'width': width,
    };
  }
