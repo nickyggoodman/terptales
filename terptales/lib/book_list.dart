@@ -307,6 +307,7 @@ Widget build(BuildContext context) {
 ),
             Expanded(
               child: ListView.builder(
+                // scrollDirection: Axis.horizontal,
                 itemCount: bookUrls.length,
                 itemBuilder: (context, index) => _buildBookTile(bookUrls[index]),
               ),
@@ -453,7 +454,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
 
   // for page changes
 
-  //in milliseconds
+  // for checking for the last time a page was turned. For the delay in gyroscope
   int _lastPageTurnTime = DateTime.now().millisecondsSinceEpoch;
   
 
@@ -476,7 +477,7 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
     /*
     https://pub.dev/packages/sensors_plus
     https://plus.fluttercommunity.dev/docs/sensors_plus/usage/
-    gyroscope stream here.
+    gyroscope stream here. - Nicky G.
     */ 
     _gyroSubscription = gyroscopeEventStream(samplingPeriod: SensorInterval.normalInterval).listen((event) {
       setState(() {
@@ -485,6 +486,9 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
         _gyroZ = event.z;
         DateTime dateTimeGyro = DateTime.now();
         //print('x: $_gyroX y: $_gyroY, z: $_gyroZ}');
+        // allow a page turn only every 2 seconds. If we allow less than then
+        // it can turn back a page or forward a page without you wanting it
+        // to since the gyro position works relatively.
         if (dateTimeGyro.millisecondsSinceEpoch - _lastPageTurnTime > 2000){
           if (_gyroY > 5){
             currentPage = currentPage! + 1;
@@ -516,9 +520,9 @@ class _PDFScreenState extends State<PDFScreen> with WidgetsBindingObserver {
         title: Column(
           children: [
             Text(path.basename(widget.path ?? 'No File Selected')),
-            Text('x:${_gyroX}'),
-            Text('y:${_gyroY}'), // y will be less than -1 for right page turn (forward a page), greater than 1 for left page flip (back a page)
-            Text('z:${_gyroZ}')
+            // Text('x:${_gyroX}'),
+            // Text('y:${_gyroY}'), // y will be less than -1 for right page turn (forward a page), greater than 1 for left page flip (back a page)
+            // Text('z:${_gyroZ}')
           ]
         ),
         actions: [
