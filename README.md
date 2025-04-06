@@ -13,9 +13,9 @@ is to create an an ereader that feels more like "real" book and can pull from
 a diverse set of sites using epub and pdf formats. 
 
 ## Authors
-Nicholas Goodman\ 
-Justinah Bashua\
-Islah Abdulmalek\
+* Nicholas Goodman 
+* Justinah Bashua
+* Islah Abdulmalek
 
 ## Usage
 
